@@ -15,9 +15,7 @@ The workflow:
 
 The workflow is modular, scalable across TCGA projects, and fully reproducible through conda-managed environments.
 
-<br>
-
-################################################################################ INSERT FIGURE SUMMARIZING THE workflow STEPS ################################################################################
+![](scheme.png)
 
 ## Repository structure
 
