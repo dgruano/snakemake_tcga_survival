@@ -11,11 +11,9 @@ dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 # Use the Ensembl Genes dataset
 mart <- useEnsembl(biomart = "genes", dataset = "hsapiens_gene_ensembl")
 
-# Retrieve mapping for protein-coding genes
+# Retrieve mapping for lncRNAs
 genes <- getBM(
   attributes = c("ensembl_gene_id", "hgnc_symbol", "gene_biotype"),
-  filters    = "biotype",
-  values     = "protein_coding",
   mart       = mart
 )
 

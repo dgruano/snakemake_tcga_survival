@@ -6,6 +6,25 @@ library(GSVA)
 library(survminer)
 library(survival)
 
+log_msg <- function(...) {
+  ts <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+  message(sprintf("[%s] %s", ts, paste0(..., collapse = "")))
+}
+
+is_blank <- function(x) {
+  is.na(x) | trimws(x) == ""
+}
+
+extract_genes <- function(x) {
+  x <- x[!is_blank(x)]
+  if (length(x) == 0) {
+    return(character(0))
+  }
+  parts <- unlist(strsplit(x, ",", fixed = TRUE), use.names = FALSE)
+  parts <- trimws(parts)
+  unique(parts[parts != ""])
+}
+
 # define parameters
 args <- commandArgs(trailingOnly = TRUE)
 DPI <- args[1] %>% as.numeric()
@@ -31,23 +50,113 @@ dir.create(paste0("./screening/survival/", project), showWarnings = FALSE,  recu
 # load normalized data
 dds = readRDS(paste0("./DESeq2_normalized/", project,"_STAR_Counts_DESeq2.rds"))
 # read gene_signatures.txt (tab separated)
-gene_signatures <- read.delim(signatures_file, header = TRUE, stringsAsFactors = FALSE)
-# load vector with percentiles
-percentiles <- c(0.05, 0.10, 0.15, 0.20, 0.25, 0.33, 0.5)
+gene_signatures <- read.delim(
+  signatures_file,
+  header = TRUE,
+  stringsAsFactors = FALSE,
+  check.names = FALSE,
+  fill = TRUE
+)
+log_msg("Loaded signatures file: ", signatures_file)
+log_msg("Signature table dimensions (rows x cols): ", nrow(gene_signatures), " x ", ncol(gene_signatures))
 
-# classify signatures in < 2 genes and >= 2 genes (column values)
-single_gene_signatures <- gene_signatures[sapply(gene_signatures, function(x) length(unlist(strsplit(x, ","))) < 2)]
-multiple_gene_signatures <- gene_signatures[sapply(gene_signatures, function(x) length(unlist(strsplit(x, ","))) >= 2)]
+if (ncol(gene_signatures) == 0) {
+  stop("Signatures file has no columns")
+}
+
+# Some malformed files repeat the header as the first data row.
+if (nrow(gene_signatures) > 0) {
+  first_row <- as.character(gene_signatures[1, , drop = TRUE])
+  if (length(first_row) == ncol(gene_signatures) &&
+      all(trimws(first_row) == trimws(colnames(gene_signatures)))) {
+    gene_signatures <- gene_signatures[-1, , drop = FALSE]
+    log_msg("Detected duplicated header row in signatures file; first data row was removed")
+  }
+}
+
+if (nrow(gene_signatures) == 0) {
+  log_msg("No data rows in signatures file after cleanup; using column names as single-gene signatures")
+}
+
+signature_genes_raw <- lapply(gene_signatures, extract_genes)
+if (nrow(gene_signatures) == 0) {
+  signature_genes_raw <- as.list(colnames(gene_signatures))
+  names(signature_genes_raw) <- colnames(gene_signatures)
+}
+
+signature_genes_raw <- signature_genes_raw[lengths(signature_genes_raw) > 0]
+if (length(signature_genes_raw) == 0) {
+  stop("No signatures with at least one gene were found in signatures file")
+}
+
+# extract normalized counts for ssGSEA and map signature IDs to expression row names
+# in a case-insensitive way to avoid symbol case mismatches.
+dds <- estimateSizeFactors(dds)
+norm_counts <- counts(dds, normalized = TRUE)
+expr_genes <- rownames(norm_counts)
+expr_gene_lookup <- setNames(expr_genes, toupper(expr_genes))
+signature_genes <- lapply(signature_genes_raw, function(g) {
+  mapped <- unname(expr_gene_lookup[toupper(g)])
+  unique(mapped[!is.na(mapped)])
+})
+
+signature_sizes <- vapply(signature_genes, length, integer(1))
+log_msg(
+  "Parsed signatures: ",
+  length(signature_genes),
+  " total (",
+  sum(signature_sizes == 0),
+  " unmatched, ",
+  sum(signature_sizes == 1),
+  " single-gene, ",
+  sum(signature_sizes >= 2),
+  " multi-gene)"
+)
+
+unmatched_signatures <- names(signature_genes)[signature_sizes == 0]
+if (length(unmatched_signatures) > 0) {
+  preview <- paste(head(unmatched_signatures, 10), collapse = ", ")
+  suffix <- ifelse(length(unmatched_signatures) > 10, " ...", "")
+  log_msg(
+    "Dropping signatures with no matching genes in expression matrix (n=",
+    length(unmatched_signatures),
+    "): ",
+    preview,
+    suffix
+  )
+}
+
+signature_genes <- signature_genes[signature_sizes > 0]
+if (length(signature_genes) == 0) {
+  stop("No signatures could be matched to expression row names")
+}
+
+# load vector with percentiles
+percentiles <- c(0.15, 0.20, 0.25, 0.33)
+
+# classify signatures by number of matched genes
+single_gene_signatures <- signature_genes[vapply(signature_genes, length, integer(1)) == 1]
+multiple_gene_signatures <- signature_genes[vapply(signature_genes, length, integer(1)) >= 2]
 # identify if any of the multiple gene signatures end with _UP or _DOWN and they have the same character string before that suffix
 names_multiple <- names(multiple_gene_signatures)
 base_names <- sub("(_UP|_DOWN)$", "", names_multiple)
 duplicated_base_names <- base_names[duplicated(base_names)]
-# extract normlalized counts for ssGSEA
-dds <- estimateSizeFactors(dds)
-norm_counts <- counts(dds, normalized = TRUE)
-# perform ssgsea for multiple gene signatures
-scores <- gsva(norm_counts, as.list(multiple_gene_signatures), method = "ssgsea", ssgsea.norm = TRUE)
-scores <- as.data.frame(t(scores))
+
+# perform ssGSEA only when >=1 valid multi-gene signature exists
+if (length(multiple_gene_signatures) > 0) {
+  scores <- gsva(
+    as.matrix(norm_counts),
+    multiple_gene_signatures,
+    method = "ssgsea",
+    ssgsea.norm = TRUE,
+    verbose = FALSE
+  )
+  scores <- as.data.frame(t(scores))
+  log_msg("Computed ssGSEA scores for multi-gene signatures: ", ncol(scores))
+} else {
+  scores <- data.frame(row.names = colnames(norm_counts))
+  log_msg("No valid multi-gene signatures after ID matching; skipping ssGSEA step")
+}
 
 # combine _UP and _DOWN signatures with the same base name
 for (base_name in duplicated_base_names) {
@@ -74,7 +183,8 @@ for (signature in colnames(scores)) {
 
 # add the single_gene_signatures to the scores
 for (signature in names(single_gene_signatures)) {
-  scores[, signature] <- norm_counts[signature, ]
+  gene_id <- single_gene_signatures[[signature]][1]
+  scores[, signature] <- norm_counts[gene_id, ]
   for (percentile in percentiles) {
     threshold_low <- quantile(scores[, signature], probs = percentile)
     threshold_high <- quantile(scores[, signature], probs = 1 - percentile)
