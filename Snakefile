@@ -5,6 +5,8 @@ import sys
 configfile: "config.yaml"
 # validate(config, schema="schemas/config.schema.yaml")
 
+# include common functions
+include: "workflow/rules/common.smk"
 # include rule bundles
 include: "workflow/rules/biomaRt_download.smk"
 include: "workflow/rules/TCGA_download.smk"

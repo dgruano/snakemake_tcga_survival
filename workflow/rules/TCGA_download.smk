@@ -1,14 +1,6 @@
-configfile: "config.yaml"
-
-def load_tcga_cohorts(wildcards):
-    with open(config["TCGA_cohorts"]) as f:
-        TCGA_cohortS = [line.strip() for line in f if line.strip()]
-    return  expand("<results>/rds/{cohort}_STAR_Counts.rds",
-               cohort=TCGA_cohortS)
-
 rule all_tcga:
     input:
-        load_tcga_cohorts
+        tcga_download_outputs
 
 rule TCGA_download:
     input:

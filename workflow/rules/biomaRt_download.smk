@@ -1,5 +1,3 @@
-configfile: "config.yaml"
-
 rule biomaRt_download:
     output:
         "<results>/biomart/biomart_protein_coding_genes.csv"

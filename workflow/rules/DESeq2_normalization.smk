@@ -1,14 +1,3 @@
-configfile: "config.yaml"
-
-def deseq2_output(wildcards):
-    with open(config["TCGA_cohorts"]) as f:
-        TCGA_PROJECTS = [line.strip() for line in f if line.strip()]
-        # Automatically add SKCM_prim and SKCM_met
-    if "TCGA-SKCM" in TCGA_PROJECTS:
-        TCGA_PROJECTS += ["TCGA-SKCM_prim", "TCGA-SKCM_met"]
-    return  expand("<results>/DESeq2_normalized/{project}_STAR_Counts_DESeq2.rds",
-               project=TCGA_PROJECTS)
-
 rule all_deseq2:
     input:
         deseq2_output
