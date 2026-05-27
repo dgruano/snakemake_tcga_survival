@@ -25,16 +25,6 @@ tryCatch({
   stop(e)
 })
 
-# Add SKCM variants if SKCM is in the input list
-if ("TCGA-SKCM" %in% dir_list) {
-  log_msg("TCGA-SKCM found in cohort list, adding SKCM variants")
-  dir_list <- c(dir_list, "TCGA-SKCM_prim", "TCGA-SKCM_met")
-  log_msg(paste("Total cohorts to process (including SKCM variants):", length(dir_list)))
-} else {
-  log_msg("TCGA-SKCM not found in cohort list, skipping SKCM variants")
-  log_msg(paste("Total cohorts to process:", length(dir_list)))
-}
-
 out_path_survival <- dirname(output)
 log_msg(paste("Working directory:", out_path_survival))
 
