@@ -9,24 +9,19 @@ log_msg("Starting merge_survival_results.R")
 
 # Parse arguments
 args <- commandArgs(trailingOnly = TRUE)
-tcga_file <- args[1]
+tcga_cohorts_str <- args[1]
 output <- args[2]
 
-log_msg(paste("TCGA file:", tcga_file))
+log_msg(paste("TCGA cohorts (comma-separated):", tcga_cohorts_str))
 log_msg(paste("Output directory:", output))
 
-# Validate input file
-if (!file.exists(tcga_file)) {
-  stop("TCGA file not found: ", tcga_file)
-}
-log_msg("Input file validated")
-
-# Read cohort list
+# Parse comma-separated cohort list
 tryCatch({
-  dir_list <- as.vector(read.table(tcga_file, header = FALSE)[,1])
-  log_msg(paste("Loaded", length(dir_list), "cohorts from file"))
+  dir_list <- trimws(strsplit(tcga_cohorts_str, ",")[[1]])
+  dir_list <- dir_list[dir_list != ""]
+  log_msg(paste("Loaded", length(dir_list), "cohorts from comma-separated list"))
 }, error = function(e) {
-  log_msg(paste("ERROR: Failed to read TCGA file:", conditionMessage(e)))
+  log_msg(paste("ERROR: Failed to parse TCGA cohorts:", conditionMessage(e)))
   stop(e)
 })
 

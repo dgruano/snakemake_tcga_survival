@@ -5,7 +5,6 @@ rule all_survival:
 rule survival_screening:
     input:
         signatures_file = os.path.abspath(config["signatures_file"]),
-        cohorts = config["TCGA_cohorts"],
         deseq2_file = "<results>/DESeq2_normalized/{project}_STAR_Counts_DESeq2.rds"
     params:
         THRESHOLD = config["THRESHOLD"],

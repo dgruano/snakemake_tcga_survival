@@ -4,7 +4,6 @@ rule all_deseq2:
 
 rule DESeq2_normalization:
     input:
-        cohorts = config["TCGA_cohorts"],
         rds_file = "<results>/rds/{project}_STAR_Counts.rds",
         biomart_file = "<results>/biomart/biomart_protein_coding_genes.csv"
     output:

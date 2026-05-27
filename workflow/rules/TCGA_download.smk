@@ -3,8 +3,6 @@ rule all_tcga:
         tcga_download_outputs
 
 rule TCGA_download:
-    input:
-        config["TCGA_cohorts"]
     output:
         "<results>/rds/{cohort}_STAR_Counts.rds"
     threads:
