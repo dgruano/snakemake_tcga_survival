@@ -1,0 +1,41 @@
+# Snakemake
+.snakemake/
+snakemake.log
+# Local config files
+config/local/
+
+# Conda environments
+.conda/
+
+# R
+*.Rhistory
+*.RData
+*.Rds
+*.rds
+.Rproj.user/
+*.Rproj
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Data and results (large files, generated outputs)
+results/
+data/
+logs/
+benchmarks/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*~
+*.swp
+.claude
