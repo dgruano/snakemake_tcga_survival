@@ -22,7 +22,8 @@ rule survival_screening:
         deseq2_file = "<results>/DESeq2_normalized/{project}_STAR_Counts_DESeq2.rds"
     params:
         THRESHOLD = config["THRESHOLD"],
-        DPI = config["DPI"]
+        DPI = config["DPI"],
+        PERCENTILES = ",".join(map(str, config["PERCENTILES"]))
     output:
         "<results>/screening/survival/{project}/survival_pval_filtered.tsv"
     threads:
@@ -36,5 +37,5 @@ rule survival_screening:
         "<logs>/survival_screening_{project}.log"
     shell:
         """
-        Rscript scripts/survival_screening.R {params.DPI} {params.THRESHOLD} {input.signatures_file} {wildcards.project} {output} > {log} 2>&1
+        Rscript scripts/survival_screening.R {params.DPI} {params.THRESHOLD} {input.signatures_file} {wildcards.project} {output} {params.PERCENTILES} > {log} 2>&1
         """

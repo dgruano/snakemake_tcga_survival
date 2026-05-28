@@ -1,10 +1,10 @@
-library(DESeq2)
-library(TCGAbiolinks)
-library(ggplot2)
-library(dplyr)
-library(GSVA)
-library(survminer)
-library(survival)
+  library(DESeq2)
+  library(TCGAbiolinks)
+  library(ggplot2)
+  library(dplyr)
+  library(GSVA)
+  library(survminer)
+  library(survival)
 
 # define parameters
 args <- commandArgs(trailingOnly = TRUE)
@@ -13,7 +13,12 @@ THRESHOLD <- args[2] %>% as.numeric()
 signatures_file <- args[3]
 project <- args[4]
 survival_table <- args[5]
-GDC_dir <- survival_table %>% dirname() %>% dirname() %>% dirname() %>% dirname() 
+percentiles_str <- args[6]
+GDC_dir <- survival_table %>% dirname() %>% dirname() %>% dirname() %>% dirname()
+
+# Parse percentiles from comma-separated string
+percentiles <- as.numeric(strsplit(percentiles_str, ",")[[1]])
+
 
 # set working directory to output directory
 setwd(GDC_dir)
@@ -29,9 +34,8 @@ dir.create(paste0("./screening/survival/", project), showWarnings = FALSE,  recu
 # load normalized data
 dds = readRDS(paste0("./DESeq2_normalized/", project,"_STAR_Counts_DESeq2.rds"))
 # read gene_signatures.txt (tab separated)
-gene_signatures <- read.delim(signatures_file, header = TRUE, stringsAsFactors = FALSE)
-# load vector with percentiles
-percentiles <- c(0.05, 0.10, 0.15, 0.20, 0.25, 0.33, 0.5)
+  gene_signatures <- read.delim(signatures_file, header = TRUE, stringsAsFactors = FALSE)
+# Percentiles already loaded from command-line argument
 
 # classify signatures in < 2 genes and >= 2 genes (column values)
 single_gene_signatures <- gene_signatures[sapply(gene_signatures, function(x) length(unlist(strsplit(x, ","))) < 2)]
@@ -41,24 +45,24 @@ names_multiple <- names(multiple_gene_signatures)
 base_names <- sub("(_UP|_DOWN)$", "", names_multiple)
 duplicated_base_names <- base_names[duplicated(base_names)]
 # extract normlalized counts for ssGSEA
-dds <- estimateSizeFactors(dds)
-norm_counts <- counts(dds, normalized = TRUE)
+  dds <- estimateSizeFactors(dds)
+  norm_counts <- counts(dds, normalized = TRUE)
 # perform ssgsea for multiple gene signatures
 if (length(multiple_gene_signatures) > 0 && ncol(as.data.frame(multiple_gene_signatures)) > 0) {
-  scores <- gsva(norm_counts, as.list(multiple_gene_signatures), method = "ssgsea", ssgsea.norm = TRUE)
-  scores <- as.data.frame(t(scores))
+    scores <- gsva(norm_counts, as.list(multiple_gene_signatures), method = "ssgsea", ssgsea.norm = TRUE)
+    scores <- as.data.frame(t(scores))
 } else {
   scores <- data.frame(row.names = colnames(norm_counts))
 }
 
 # combine _UP and _DOWN signatures with the same base name
-for (base_name in duplicated_base_names) {
-  up_name <- paste0(base_name, "_UP")
-  down_name <- paste0(base_name, "_DOWN")
-  if (up_name %in% colnames(scores) & down_name %in% colnames(scores)) {
-    combined_scores <- scores[, up_name] - scores[, down_name]
-    scores <- cbind(scores, combined_scores)
-    colnames(scores)[ncol(scores)] <- paste0(base_name, "_COMBINED")
+  for (base_name in duplicated_base_names) {
+    up_name <- paste0(base_name, "_UP")
+    down_name <- paste0(base_name, "_DOWN")
+    if (up_name %in% colnames(scores) & down_name %in% colnames(scores)) {
+      combined_scores <- scores[, up_name] - scores[, down_name]
+      scores <- cbind(scores, combined_scores)
+      colnames(scores)[ncol(scores)] <- paste0(base_name, "_COMBINED")
   }
 }
 
@@ -76,15 +80,15 @@ for (signature in colnames(scores)) {
 
 # add the single_gene_signatures to the scores
 for (signature in names(single_gene_signatures)) {
-  scores[, signature] <- norm_counts[signature, ]
-  for (percentile in percentiles) {
-    threshold_low <- quantile(scores[, signature], probs = percentile)
-    threshold_high <- quantile(scores[, signature], probs = 1 - percentile)
-    categorical_var <- ifelse(scores[, signature] <= threshold_low, "Low",
-                              ifelse(scores[, signature] >= threshold_high, "High", "Intermediate"))
-    col_name <- paste0(signature, "_", percentile * 100, "pct")
-    colData(dds)[, col_name] <- categorical_var
-  }
+    scores[, signature] <- norm_counts[signature, ]
+    for (percentile in percentiles) {
+      threshold_low <- quantile(scores[, signature], probs = percentile)
+      threshold_high <- quantile(scores[, signature], probs = 1 - percentile)
+      categorical_var <- ifelse(scores[, signature] <= threshold_low, "Low",
+                                ifelse(scores[, signature] >= threshold_high, "High", "Intermediate"))
+      col_name <- paste0(signature, "_", percentile * 100, "pct")
+      colData(dds)[, col_name] <- categorical_var
+    }
 }
 
 # create empty p-value table
@@ -227,43 +231,43 @@ for (signature in colnames(scores)) {
 }
 
 # save scores matrix
-write.table(
-  scores,
+  write.table(
+    scores,
   file = paste0("./screening/survival/", project,"/patient_scores.tsv"),
-  sep = "\t",
-  quote = FALSE,
-  col.names = NA
-)
+    sep = "\t",
+    quote = FALSE,
+    col.names = NA
+  )
 
 # save patient stratification on colData
-tmp <- as.data.frame(colData(dds))
-logical <- endsWith(colnames(tmp), "pct")
-write.table(
-  tmp[, logical],
+  tmp <- as.data.frame(colData(dds))
+  logical <- endsWith(colnames(tmp), "pct")
+  write.table(
+    tmp[, logical],
   file = paste0("./screening/survival/", project,"/patient_scores_categorical.tsv"),
-  sep = "\t",
-  quote = FALSE,
-  col.names = NA
-)
+    sep = "\t",
+    quote = FALSE,
+    col.names = NA
+  )
 
 # save survival p-value matrix
-write.table(
-  surv_pval_mat,
+  write.table(
+    surv_pval_mat,
   file = paste0("./screening/survival/", project,"/survival_pval.tsv"),
-  sep = "\t",
-  quote = FALSE,
-  col.names = NA
-)
+    sep = "\t",
+    quote = FALSE,
+    col.names = NA
+  )
 
 # create a filtered version of the p-value matrix
 surv_pval_filtered <- surv_pval_mat
 surv_pval_filtered[surv_pval_filtered >= THRESHOLD] <- ""
 
 # save filtered p-value matrix
-write.table(
-  surv_pval_filtered,
-  file = survival_table,
-  sep = "\t",
-  quote = FALSE,
-  col.names = NA
-)
+  write.table(
+    surv_pval_filtered,
+    file = survival_table,
+    sep = "\t",
+    quote = FALSE,
+    col.names = NA
+  )

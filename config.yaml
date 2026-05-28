@@ -5,6 +5,14 @@ signatures_file: 'config/gene_signatures.txt'
 # params for survival_screening.smk
 DPI: 400
 THRESHOLD: 0.05
+PERCENTILES:
+  - 0.05
+  - 0.10
+  - 0.15
+  - 0.20
+  - 0.25
+  - 0.33
+  - 0.5
 
 # define pathvars
 pathvars:
