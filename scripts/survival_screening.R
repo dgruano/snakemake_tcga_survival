@@ -161,6 +161,12 @@ log_msg(paste("Created", stratification_count, "stratified variables for multi-g
 # add the single_gene_signatures to the scores
 log_msg(paste("Processing", length(single_gene_signatures), "single-gene signatures..."))
 for (signature in names(single_gene_signatures)) {
+  tryCatch({
+    # check if the gene is present in the normalized counts, skip if not
+    if (!(signature %in% rownames(norm_counts))) {
+      log_msg(paste("WARNING: Gene", signature, "not found in normalized counts; skipping"))
+      next
+    }
     scores[, signature] <- norm_counts[signature, ]
     for (percentile in percentiles) {
       threshold_low <- quantile(scores[, signature], probs = percentile)
@@ -169,7 +175,11 @@ for (signature in names(single_gene_signatures)) {
                                 ifelse(scores[, signature] >= threshold_high, "High", "Intermediate"))
       col_name <- paste0(signature, "_", percentile * 100, "pct")
       colData(dds)[, col_name] <- categorical_var
+      stratification_count <- stratification_count + 1
     }
+  }, error = function(e) {
+    log_msg(paste("WARNING: Failed to process single-gene signature", signature, ":", conditionMessage(e)))
+  })
 }
 log_msg(paste("Total stratified variables created:", stratification_count))
 
