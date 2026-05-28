@@ -8,7 +8,7 @@ keep-going: true
 rerun-incomplete: true
 scheduler: greedy
 use-conda: true
-latency-wait: 20
+latency-wait: 45
 # max resources
 resources:
   mem_mb: 500000
