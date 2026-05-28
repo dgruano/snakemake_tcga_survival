@@ -319,6 +319,7 @@ for (signature in colnames(scores)) {
         ylab(paste0("PC2: ", percentVar[2], "% variance")) +
         ggtitle(paste0(project, " - PCA - ", signature, " - ", percentile * 100, "pct")) +
         theme_minimal() +
+        theme(plot.background = element_rect(fill = "white")) +
         labs(color = "Expression groups")
         # save PCA as png
         pca_plot_file <- paste0("./screening/PCA/", project, "/PCA_", signature, "_", percentile * 100, "pct.png")
