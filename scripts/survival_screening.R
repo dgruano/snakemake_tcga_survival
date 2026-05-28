@@ -44,8 +44,12 @@ duplicated_base_names <- base_names[duplicated(base_names)]
 dds <- estimateSizeFactors(dds)
 norm_counts <- counts(dds, normalized = TRUE)
 # perform ssgsea for multiple gene signatures
-scores <- gsva(norm_counts, as.list(multiple_gene_signatures), method = "ssgsea", ssgsea.norm = TRUE)
-scores <- as.data.frame(t(scores))
+if (length(multiple_gene_signatures) > 0 && ncol(as.data.frame(multiple_gene_signatures)) > 0) {
+  scores <- gsva(norm_counts, as.list(multiple_gene_signatures), method = "ssgsea", ssgsea.norm = TRUE)
+  scores <- as.data.frame(t(scores))
+} else {
+  scores <- data.frame(row.names = colnames(norm_counts))
+}
 
 # combine _UP and _DOWN signatures with the same base name
 for (base_name in duplicated_base_names) {
