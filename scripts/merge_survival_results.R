@@ -10,8 +10,6 @@ log_msg("Starting merge_survival_results.R")
 # Parse arguments
 args <- commandArgs(trailingOnly = TRUE)
 tcga_file <- args[1]
-dir_list <- as.vector(read.table(tcga_file, header = FALSE)[,1])
-dir_list <- c(dir_list, "TCGA-SKCM_prim", "TCGA-SKCM_met")
 output <- args[2]
 
 log_msg(paste("TCGA file:", tcga_file))
