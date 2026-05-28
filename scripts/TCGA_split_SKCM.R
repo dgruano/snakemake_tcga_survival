@@ -16,5 +16,5 @@ saveRDS(data_prim, file = outfile_prim)
 
 # save object for the 369 metastatic melanomas
 data_met = data[, data$definition %in% c("Metastatic", "Additional Metastatic")]
-cat("Saving SKCM_prim data to", outfile_met, "\n")
+cat("Saving SKCM_met data to", outfile_met, "\n")
 saveRDS(data_met, file = outfile_met)
