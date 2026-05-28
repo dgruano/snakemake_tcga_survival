@@ -92,7 +92,7 @@ The workflow performs the following steps:
 * Raw STAR counts are imported into DESeq2.
 * Median-of-ratios normalization is applied.
 * Normalized expression values are saved in `.rds` for downstream analysis.
-* The process is performed independently in also performed 
+* The process is performed independently in also performed
 
 **4) Gene and/or gene signature scoring and survival screening** (`survival_screening.smk` → `survival_screening.R`)
 
@@ -132,9 +132,9 @@ Clone the GitHub repository.
 
 ```
 git clone https://github.com/cbib/snakemake_tcga_stratification
-``` 
+```
 
-Install Snakemake in a conda environment. 
+Install Snakemake in a conda environment.
 The workflow was built under Snakemake v9.13.7. It may be needed to modify the workflow if your system does not support one of the newest versions, since file logic changes between Snakemake versions.
 
 ```

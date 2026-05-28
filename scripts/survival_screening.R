@@ -254,7 +254,7 @@ for (signature in colnames(scores)) {
         # format HR and p-value for the figure bottom left information
         annotation_text <- paste0(
           pval_text, "\n",
-          "HR = ", hr, " (", hr_conf_low, ", ", hr_conf_high, ")" 
+          "HR = ", hr, " (", hr_conf_low, ", ", hr_conf_high, ")"
         )
 
         # format figure title
@@ -300,7 +300,7 @@ for (signature in colnames(scores)) {
             vjust = 0,
             size = 4
           )
-        
+
         # save file
         survival_plot_file <- paste0("./screening/survival/", project, "/Survival_", signature, "_", percentile * 100, "pct.png")
         ggsave(filename = survival_plot_file, plot = p$plot, dpi = DPI, width = 6, height = 5)
