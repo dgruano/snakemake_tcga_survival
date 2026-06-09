@@ -12,10 +12,6 @@ rule merge_survival_results:
         "<logs>/merge_survival_results.log",
     conda:
         "../../envs/merge_smk.yml"
-    threads: config["resources"]["merge_survival_results"]["threads"]
-    resources:
-        mem=config["resources"]["merge_survival_results"]["mem"],
-        time=config["resources"]["merge_survival_results"]["time"],
     params:
         cohorts=lambda wildcards: ",".join(TCGA_PROJECTS),
     script:

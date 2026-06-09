@@ -11,10 +11,6 @@ rule TCGA_download:
     retries: 3
     conda:
         "../../envs/tcga_smk.yml"
-    threads: config["resources"]["TCGA_download"]["threads"]
-    resources:
-        mem=config["resources"]["TCGA_download"]["mem"],
-        time=config["resources"]["TCGA_download"]["time"],
     script:
         "../scripts/TCGA_download.R"
 
@@ -29,9 +25,5 @@ rule rule_separate_cohorts:
         "<logs>/TCGA_split_SKCM.log",
     conda:
         "../../envs/tcga_smk.yml"
-    threads: config["resources"]["TCGA_download"]["threads"]
-    resources:
-        mem=config["resources"]["TCGA_download"]["mem"],
-        time=config["resources"]["TCGA_download"]["time"],
     script:
         "../scripts/TCGA_split_SKCM.R"

@@ -13,9 +13,5 @@ rule DESeq2_normalization:
         "<logs>/DESeq2_normalization_{project}.log",
     conda:
         "../../envs/tcga_smk.yml"
-    threads: config["resources"]["DESeq2_normalization"]["threads"]
-    resources:
-        mem=config["resources"]["DESeq2_normalization"]["mem"],
-        time=config["resources"]["DESeq2_normalization"]["time"],
     script:
         "../scripts/DESeq2_normalization.R"

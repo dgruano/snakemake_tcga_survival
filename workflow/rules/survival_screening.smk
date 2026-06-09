@@ -13,10 +13,6 @@ rule survival_screening:
         "<logs>/survival_screening_{project}.log",
     conda:
         "../../envs/tcga_smk.yml"
-    threads: config["resources"]["survival_screening"]["threads"]
-    resources:
-        mem=config["resources"]["survival_screening"]["mem"],
-        time=config["resources"]["survival_screening"]["time"],
     params:
         THRESHOLD=config["THRESHOLD"],
         DPI=config["DPI"],
