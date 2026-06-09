@@ -6,12 +6,12 @@ args <- commandArgs(trailingOnly = TRUE)
 project <- args[1]
 outfile <- args[2]
 outdir <- dirname(outfile)
-GDC_dir <- dirname(outdir)
+root_dir <- dirname(outdir)
 
-# create output directory if it doesn't exist
+# create rds output directory if it doesn't exist
 dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
-# set working directory to output directory
-setwd(GDC_dir)
+# set working directory to root of output directory
+setwd(root_dir)
 
 # create query for project
 query <- GDCquery(
@@ -30,3 +30,11 @@ data <- GDCprepare(query = query)
 # save the data as .rds file
 cat("Saving data for project", project, "to", outfile, "\n")
 saveRDS(data, file = outfile)
+
+
+# clean up GDC cache
+gdc_temp_dir <- file.path(root_dir, "GDCdata", project)
+if (dir.exists(gdc_temp_dir)) {
+    cat("Cleaning up GDC cache at", gdc_temp_dir, "\n")
+    unlink(gdc_temp_dir, recursive = TRUE, force = TRUE)
+}
