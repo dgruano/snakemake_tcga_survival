@@ -18,7 +18,5 @@ rule merge_survival_results:
         time=config["resources"]["merge_survival_results"]["time"],
     params:
         cohorts=lambda wildcards: ",".join(TCGA_PROJECTS),
-    shell:
-        """
-        Rscript scripts/merge_survival_results.R {params.cohorts} {output} >{log} 2>&1
-        """
+    script:
+        "../scripts/merge_survival_results.R"

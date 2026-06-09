@@ -21,7 +21,5 @@ rule survival_screening:
         THRESHOLD=config["THRESHOLD"],
         DPI=config["DPI"],
         PERCENTILES=",".join(map(str, config["PERCENTILES"])),
-    shell:
-        """
-        Rscript scripts/survival_screening.R {params.DPI} {params.THRESHOLD} {input.signatures_file} {wildcards.project} {output} {params.PERCENTILES} > {log} 2>&1
-        """
+    script:
+        "../scripts/survival_screening.R"

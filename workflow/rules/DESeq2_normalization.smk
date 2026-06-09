@@ -17,7 +17,5 @@ rule DESeq2_normalization:
     resources:
         mem=config["resources"]["DESeq2_normalization"]["mem"],
         time=config["resources"]["DESeq2_normalization"]["time"],
-    shell:
-        """
-        Rscript scripts/DESeq2_normalization.R {output} {input.rds_file} {input.biomart_file} >{log} 2>&1
-        """
+    script:
+        "../scripts/DESeq2_normalization.R"

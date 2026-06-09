@@ -10,7 +10,5 @@ rule biomaRt_download:
     resources:
         mem=config["resources"]["biomaRt_download"]["mem"],
         time=config["resources"]["biomaRt_download"]["time"],
-    shell:
-        """
-        Rscript scripts/biomaRt_download.R {output} >{log} 2>&1
-        """
+    script:
+        "../scripts/biomaRt_download.R"

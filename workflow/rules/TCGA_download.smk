@@ -15,10 +15,8 @@ rule TCGA_download:
     resources:
         mem=config["resources"]["TCGA_download"]["mem"],
         time=config["resources"]["TCGA_download"]["time"],
-    shell:
-        """
-        Rscript scripts/TCGA_download.R {wildcards.cohort} {output} > {log} 2>&1
-        """
+    script:
+        "../scripts/TCGA_download.R"
 
 
 rule rule_separate_cohorts:
@@ -35,7 +33,5 @@ rule rule_separate_cohorts:
     resources:
         mem=config["resources"]["TCGA_download"]["mem"],
         time=config["resources"]["TCGA_download"]["time"],
-    shell:
-        """
-        Rscript scripts/TCGA_split_SKCM.R {input} {output.outfile_prim} {output.outfile_met} > {log} 2>&1
-        """
+    script:
+        "../scripts/TCGA_split_SKCM.R"
