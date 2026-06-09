@@ -1,10 +1,20 @@
 library(biomaRt)
 library(curl)
 
+if (exists("snakemake")) {
+  outfile <- snakemake@output[[1]]
+} else {
+  args    <- commandArgs(trailingOnly = TRUE)
+  outfile <- args[1]
+}
+if (exists("snakemake")) {
+  log_con <- file(snakemake@log[[1]], open = "wt")
+  sink(log_con, append = TRUE)
+  sink(log_con, append = TRUE, type = "message")
+}
+
 message("[", Sys.time(), "] Starting biomaRt gene annotation download")
 
-args <- commandArgs(trailingOnly = TRUE)
-outfile <- args[1]
 outdir <- dirname(outfile)
 
 message("[", Sys.time(), "] Output file: ", outfile)

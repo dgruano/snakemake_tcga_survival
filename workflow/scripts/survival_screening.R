@@ -17,13 +17,29 @@ log_msg <- function(msg) {
 log_msg("===== survival_screening.R started =====")
 
 # define parameters
-args <- commandArgs(trailingOnly = TRUE)
-DPI <- args[1] %>% as.numeric()
-THRESHOLD <- args[2] %>% as.numeric()
-signatures_file <- args[3]
-project <- args[4]
-survival_table <- args[5]
-percentiles_str <- args[6]
+if (exists("snakemake")) {
+  DPI             <- snakemake@params[["DPI"]]
+  THRESHOLD       <- snakemake@params[["THRESHOLD"]]
+  signatures_file <- snakemake@input[["signatures_file"]]
+  project         <- snakemake@wildcards[["project"]]
+  survival_table  <- snakemake@output[[1]]
+  percentiles_str <- snakemake@params[["PERCENTILES"]]
+} else {
+  args            <- commandArgs(trailingOnly = TRUE)
+  DPI             <- args[1]
+  THRESHOLD       <- args[2]
+  signatures_file <- args[3]
+  project         <- args[4]
+  survival_table  <- args[5]
+  percentiles_str <- args[6]
+}
+if (exists("snakemake")) {
+  log_con <- file(snakemake@log[[1]], open = "wt")
+  sink(log_con, append = TRUE)
+  sink(log_con, append = TRUE, type = "message")
+}
+DPI <- as.numeric(DPI)
+THRESHOLD <- as.numeric(THRESHOLD)
 GDC_dir <- survival_table %>% dirname() %>% dirname() %>% dirname() %>% dirname()
 
 # Parse percentiles from comma-separated string

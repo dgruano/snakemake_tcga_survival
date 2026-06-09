@@ -2,9 +2,19 @@ suppressPackageStartupMessages({
     library(TCGAbiolinks)
 })
 
-args <- commandArgs(trailingOnly = TRUE)
-project <- args[1]
-outfile <- args[2]
+if (exists("snakemake")) {
+  project <- snakemake@wildcards[["cohort"]]
+  outfile <- snakemake@output[[1]]
+} else {
+  args    <- commandArgs(trailingOnly = TRUE)
+  project <- args[1]
+  outfile <- args[2]
+}
+if (exists("snakemake")) {
+  log_con <- file(snakemake@log[[1]], open = "wt")
+  sink(log_con, append = TRUE)
+  sink(log_con, append = TRUE, type = "message")
+}
 outdir <- dirname(outfile)
 root_dir <- dirname(outdir)
 

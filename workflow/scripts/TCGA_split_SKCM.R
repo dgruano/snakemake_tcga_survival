@@ -2,10 +2,21 @@ suppressPackageStartupMessages({
     library(TCGAbiolinks)
 })
 
-args <- commandArgs(trailingOnly = TRUE)
-inputfile <- args[1]
-outfile_prim <- args[2]
-outfile_met <- args[3]
+if (exists("snakemake")) {
+  inputfile    <- snakemake@input[[1]]
+  outfile_prim <- snakemake@output[["outfile_prim"]]
+  outfile_met  <- snakemake@output[["outfile_met"]]
+} else {
+  args         <- commandArgs(trailingOnly = TRUE)
+  inputfile    <- args[1]
+  outfile_prim <- args[2]
+  outfile_met  <- args[3]
+}
+if (exists("snakemake")) {
+  log_con <- file(snakemake@log[[1]], open = "wt")
+  sink(log_con, append = TRUE)
+  sink(log_con, append = TRUE, type = "message")
+}
 
 # read SKCM cohort
 data <- readRDS(inputfile)

@@ -3,10 +3,21 @@ library(TCGAbiolinks)
 library(ggplot2)
 library(dplyr)
 
-args <- commandArgs(trailingOnly = TRUE)
-outfile <- args[1]
-rds_file <- args[2]
-biomart_file <- args[3]
+if (exists("snakemake")) {
+  outfile      <- snakemake@output[[1]]
+  rds_file     <- snakemake@input[["rds_file"]]
+  biomart_file <- snakemake@input[["biomart_file"]]
+} else {
+  args         <- commandArgs(trailingOnly = TRUE)
+  outfile      <- args[1]
+  rds_file     <- args[2]
+  biomart_file <- args[3]
+}
+if (exists("snakemake")) {
+  log_con <- file(snakemake@log[[1]], open = "wt")
+  sink(log_con, append = TRUE)
+  sink(log_con, append = TRUE, type = "message")
+}
 outdir <- dirname(outfile)
 GDC_dir <- dirname(outdir)
 

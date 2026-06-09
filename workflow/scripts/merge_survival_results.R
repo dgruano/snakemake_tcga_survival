@@ -8,9 +8,19 @@ log_msg <- function(msg) {
 log_msg("Starting merge_survival_results.R")
 
 # Parse arguments
-args <- commandArgs(trailingOnly = TRUE)
-tcga_cohorts_str <- args[1]
-output <- args[2]
+if (exists("snakemake")) {
+  tcga_cohorts_str <- snakemake@params[["cohorts"]]
+  output           <- snakemake@output[[1]]
+} else {
+  args             <- commandArgs(trailingOnly = TRUE)
+  tcga_cohorts_str <- args[1]
+  output           <- args[2]
+}
+if (exists("snakemake")) {
+  log_con <- file(snakemake@log[[1]], open = "wt")
+  sink(log_con, append = TRUE)
+  sink(log_con, append = TRUE, type = "message")
+}
 
 log_msg(paste("TCGA cohorts (comma-separated):", tcga_cohorts_str))
 log_msg(paste("Output directory:", output))
