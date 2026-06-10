@@ -49,5 +49,6 @@ rownames(data_filtered) <- data_merged$hgnc_symbol
 dds <- DESeqDataSetFromMatrix(countData = assay(data_filtered),
                               colData = colData(data),
                               design = ~1)
+dds <- estimateSizeFactors(dds)
 # save normalized object
 saveRDS(dds, file = outfile)

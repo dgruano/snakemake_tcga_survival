@@ -24,6 +24,7 @@ if (exists("snakemake")) {
   project         <- snakemake@wildcards[["project"]]
   survival_table  <- snakemake@output[[1]]
   percentiles_str <- snakemake@params[["PERCENTILES"]]
+  n_threads       <- snakemake@threads
 } else {
   args            <- commandArgs(trailingOnly = TRUE)
   DPI             <- args[1]
@@ -32,6 +33,7 @@ if (exists("snakemake")) {
   project         <- args[4]
   survival_table  <- args[5]
   percentiles_str <- args[6]
+  n_threads       <- 1L
 }
 if (exists("snakemake")) {
   log_con <- file(snakemake@log[[1]], open = "wt")
@@ -53,6 +55,7 @@ log_msg(paste("Project:", project))
 log_msg(paste("Survival table output:", survival_table))
 log_msg(paste("Percentiles:", paste(percentiles * 100, "pct", collapse = ", ")))
 log_msg(paste("GDC directory:", GDC_dir))
+log_msg(paste("Threads:", n_threads))
 
 # Validate input files exist
 if (!file.exists(signatures_file)) {
@@ -116,24 +119,26 @@ if (length(duplicated_base_names) > 0) {
   log_msg(paste("Found", length(duplicated_base_names), "paired UP/DOWN signatures to combine:", paste(duplicated_base_names, collapse = ", ")))
 }
 
-# extract normlalized counts for ssGSEA
-log_msg("Estimating size factors and extracting normalized counts...")
+# extract normalized counts for ssGSEA (size factors already computed in DESeq2_normalization.R)
+log_msg("Extracting normalized counts...")
 tryCatch({
-  dds <- estimateSizeFactors(dds)
   norm_counts <- counts(dds, normalized = TRUE)
   log_msg(paste("Extracted normalized counts:", nrow(norm_counts), "genes x", ncol(norm_counts), "samples"))
 }, error = function(e) {
-  log_msg(paste("ERROR: Failed to estimate size factors:", conditionMessage(e)))
+  log_msg(paste("ERROR: Failed to extract normalized counts:", conditionMessage(e)))
   stop(e)
 })
 
 # perform ssgsea for multiple gene signatures
 if (length(multiple_gene_signatures) > 0 && ncol(as.data.frame(multiple_gene_signatures)) > 0) {
-  log_msg("Performing ssGSEA for multi-gene signatures...")
+  log_msg(paste("Performing ssGSEA for multi-gene signatures using", n_threads, "thread(s)..."))
   tryCatch({
-    scores <- gsva(norm_counts, as.list(multiple_gene_signatures), method = "ssgsea", ssgsea.norm = TRUE)
+    gsva_start <- proc.time()
+    scores <- gsva(norm_counts, as.list(multiple_gene_signatures), method = "ssgsea",
+                   ssgsea.norm = TRUE, BPPARAM = BiocParallel::MulticoreParam(n_threads))
     scores <- as.data.frame(t(scores))
-    log_msg(paste("ssGSEA completed: generated scores for", ncol(scores), "signatures"))
+    log_msg(paste("ssGSEA completed in", round((proc.time() - gsva_start)["elapsed"], 1),
+                  "s; generated scores for", ncol(scores), "signatures"))
   }, error = function(e) {
     log_msg(paste("ERROR: ssGSEA failed:", conditionMessage(e)))
     stop(e)

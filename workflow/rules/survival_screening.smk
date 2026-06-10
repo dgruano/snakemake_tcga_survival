@@ -11,6 +11,8 @@ rule survival_screening:
         "<results>/screening/survival/{project}/survival_pval_filtered.tsv",
     log:
         "<logs>/survival_screening_{project}.log",
+    benchmark:
+        "<logs>/benchmarks/survival_screening_{project}.tsv",
     conda:
         "../../envs/tcga_smk.yml"
     params:
