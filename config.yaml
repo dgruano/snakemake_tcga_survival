@@ -5,31 +5,16 @@ signatures_file: 'config/gene_signatures.txt'
 # params for survival_screening.smk
 DPI: 400
 THRESHOLD: 0.05
+PERCENTILES:
+  - 0.05
+  - 0.10
+  - 0.15
+  - 0.20
+  - 0.25
+  - 0.33
+  - 0.5
 
 # define pathvars
 pathvars:
   results: '/scratch/CBiB/soterino/smk_tcga_results'
   logs: '/scratch/CBiB/soterino/smk_logs'
-
-# set resources per rule
-resources:
-  biomaRt_download:
-    mem: 4G
-    time: 1:00:00
-    threads: 2
-  DESeq2_normalization:
-    mem: 10G
-    time: 4:00:00
-    threads: 2
-  survival_screening:
-    mem: 10G
-    time: 4:00:00
-    threads: 2
-  TCGA_download:
-    mem: 20G
-    time: 4:00:00
-    threads: 3
-  merge_survival_results:
-    mem: 5G
-    time: 1:00:00
-    threads: 3

@@ -38,25 +38,27 @@ snakemake_tcga_stratification/
 ├── profiles/default/
 │   └── config.yaml
 │
-├── scripts/
-│   ├── TCGA_download.R
-│   ├── bioMart_download.R
-│   ├── DESeq2_normalization.R
-│   ├── survival_screening.R
-│   ├── merge_survival_results.R
-│   └── TCGA_split_SKCM.R
-│
-└── workflow/rules/
-    ├── TCGA_download.smk
-    ├── biomaRt_download.smk
-    ├── DESeq2_normalization.smk
-    ├── survival_screening.smk
-    └── merge_survival_results.smk
+└── workflow/
+    ├── rules/
+    │   ├── TCGA_download.smk
+    │   ├── biomaRt_download.smk
+    │   ├── DESeq2_normalization.smk
+    │   ├── survival_screening.smk
+    │   └── merge_survival_results.smk
+    └── scripts/
+        ├── TCGA_download.R
+        ├── TCGA_split_SKCM.R
+        ├── bioMart_download.R
+        ├── DESeq2_normalization.R
+        ├── compute_scores.R
+        ├── survival_per_signature.R
+        ├── merge_survival_results.R
+        └── survival_screening.R
 ```
 <br>
 
 ## Running time
-The first run of the workflow will download the TCGA data from the Genomics Data Portal (GDC), which can be time consuming depending on your internet bandwidht.
+The first run of the workflow will download the TCGA data from the Genomics Data Portal (GDC), which can be time consuming depending on your internet bandwidth.
 <br>
 <br>
 After the first run, the workflow will not re-download the TCGA data unless the output directory on the config file is changed.
@@ -92,28 +94,37 @@ The workflow performs the following steps:
 * Raw STAR counts are imported into DESeq2.
 * Median-of-ratios normalization is applied.
 * Normalized expression values are saved in `.rds` for downstream analysis.
-* The process is performed independently in also performed 
+* The process is performed independently per cohort.
 
-**4) Gene and/or gene signature scoring and survival screening** (`survival_screening.smk` → `survival_screening.R`)
+**4) Gene and/or gene signature scoring and survival screening** (`survival_screening.smk`)
 
-**4.1) Scoring**
+This step is split into three rules that run in parallel per signature:
 
-* Extreme percentiles of expression (25%, 33%, 50%) are used to stratify patients based on RNA expression of individual genes and/or signatures.
+**4.1) Score computation** (`compute_scores.R`)
+
+* Extreme percentiles of expression (configurable via `PERCENTILES` in `config.yaml`; default: 25%, 33%, 50%) are used to stratify patients.
 * Single-gene signatures use DESeq2 normalized expression.
 * Multi-gene signatures are scored using ssGSEA via the GSVA R package.
-* For matched gene signatures (i.e. differentially upregulated and downregulated genes from in house RNA-seq experiments) _UP / _DOWN signatures are combined.
+* For matched gene signatures (i.e. differentially upregulated and downregulated genes from in-house RNA-seq experiments) `_UP` / `_DOWN` signatures are combined.
 
 ```
 Combined Score = UP − DOWN
 ```
 
-**4.2) Survival screening**
+* Outputs per cohort: `patient_scores.tsv`, `patient_scores_categorical.tsv`, `clinical_data.tsv`.
 
+**4.2) Per-signature survival analysis** (`survival_per_signature.R`)
+
+* Runs independently and in parallel for each signature, using the pre-computed scores.
 * Patients are stratified into `High`, `Intermediate` and `Low` categorical groups.
 * `Intermediate` samples excluded. `Low` and `High` groups retained and the following analyses are performed:
     * **Cox-Proportional Hazard**: including the information on the Kaplan-Meier curves.
     * **Survival analysis**: generating Kaplan–Meier curves. Saved as `.png`.
     * **Principal Component Analysis**: generating PCA plots, colored by group. Saved as `.png`.
+
+**4.3) Result gathering** (inline Snakemake `run` block)
+
+* Concatenates per-signature p-value tables into a single `survival_pval_filtered.tsv` per cohort.
 
 **5) Result merging.**
 
@@ -132,9 +143,9 @@ Clone the GitHub repository.
 
 ```
 git clone https://github.com/cbib/snakemake_tcga_stratification
-``` 
+```
 
-Install Snakemake in a conda environment. 
+Install Snakemake in a conda environment.
 The workflow was built under Snakemake v9.13.7. It may be needed to modify the workflow if your system does not support one of the newest versions, since file logic changes between Snakemake versions.
 
 ```
@@ -165,6 +176,7 @@ You can/need to modify only three files to run this workflow.
 **1) Configuration file.**
 * The `DPI` refers to the density per pixel for the output.
 * The `THRESHOLD` refers to the minimum p-value between groups for survival plots to be generated.
+* The `PERCENTILES` is a list of expression percentile cutoffs used for patient stratification (e.g. `[25, 33, 50]`).
 * The `pathvars` refer to results and log files storage.
 
 ```
@@ -207,16 +219,24 @@ For each TCGA project, the workflow generates the following folder structure:
 
 ```
 /path_to_output/
-├── biomart
-├── DESeq2_normalized
-├── GDCdata
-├── rds
-└── screening
-    ├── PCA
-    │   ├── TCGA-XXXX
+├── biomart/
+├── DESeq2_normalized/
+├── GDCdata/
+├── rds/
+└── screening/
+    ├── PCA/
+    │   ├── TCGA-XXXX/
+    │   │   └── PCA_<SIGNATURE>_<PERCENTILE>pct.png
     │   └── [...]
-    └── survival
-        ├── TCGA-XXXX
+    └── survival/
+        ├── TCGA-XXXX/
+        │   ├── patient_scores.tsv
+        │   ├── patient_scores_categorical.tsv
+        │   ├── clinical_data.tsv
+        │   ├── <SIGNATURE>_pval.tsv
+        │   ├── survival_pval.tsv
+        │   ├── survival_pval_filtered.tsv
+        │   └── Survival_<SIGNATURE>_<PERCENTILE>pct.png
         ├── [...]
         ├── survival_pval_merged.xlsx
         ├── survival_pval_filtered_merged.xlsx
@@ -229,15 +249,20 @@ The folders contain the following files:
 * **DESeq2_normalized/**
     * `.rds` DESeq2 objects with normalized counts for each cohort, including clinical metadata.
 * **GDCdata/**
-    *  TCGAbiolinks output from `GDCdownload()` for each cohort.
+    * TCGAbiolinks output from `GDCdownload()` for each cohort. Deleted after export to reduce disk usage.
 * **rds/**
-    * `.rds` TCGAbiolinks objects with raw counts in  for each cohort, including clinical metadata.
+    * `.rds` TCGAbiolinks objects with raw counts for each cohort, including clinical metadata.
 * **screening/**
     * **PCA/**
-        * A folder for each TCGA cohort. Each folder contains the PCA plots.
+        * A folder per TCGA cohort with PCA plots (`PCA_<SIGNATURE>_<PERCENTILE>pct.png`).
     * **survival/**
-        * A folder for each TCGA cohort. Each folder contains the survival plots and a `.tsv` with patient scores for each of the signatures.
-        * Excel files with the p-values for each cohort and comparison in the parent directory.
+        * A folder per TCGA cohort containing:
+            * `patient_scores.tsv` / `patient_scores_categorical.tsv` — continuous and discretized expression scores per patient and signature.
+            * `clinical_data.tsv` — clinical metadata used for survival analysis.
+            * `<SIGNATURE>_pval.tsv` — Cox PH statistics for that signature across all percentile cutoffs.
+            * `survival_pval.tsv` / `survival_pval_filtered.tsv` — all and THRESHOLD-filtered p-values concatenated across signatures.
+            * `Survival_<SIGNATURE>_<PERCENTILE>pct.png` — Kaplan–Meier curves.
+        * Excel summary files (`survival_pval_merged.xlsx`, `survival_pval_filtered_merged.xlsx`, `merged_per_signature.xlsx`) across all cohorts in the parent directory.
 
 ### Running the workflow
 
