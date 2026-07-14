@@ -8,6 +8,7 @@ LABEL org.opencontainers.image.licenses="MIT"
 # Install system deps for R packages + bc
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bc \
+    curl \
     libcurl4-openssl-dev \
     libssl-dev \
     libxml2-dev \
