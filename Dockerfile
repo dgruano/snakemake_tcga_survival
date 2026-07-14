@@ -29,8 +29,8 @@ RUN curl -fsSL https://github.com/conda-forge/miniforge/releases/latest/download
 ENV PATH="/opt/conda/bin:${PATH}"
 
 # Install Snakemake via conda-forge
-RUN conda install -c conda-forge -y snakemake && \
-    conda clean -afy
+RUN mamba install -c conda-forge -y snakemake && \
+    mamba clean -afy
 
 # Configure R to use Posit binary package manager (avoids compiling from source)
 RUN echo 'options(repos = c(CRAN = "https://packagemanager.posit.co/cran/__linux__/jammy/latest"))' \
