@@ -5,11 +5,8 @@ LABEL org.opencontainers.image.source="https://github.com/dgruano/snakemake_tcga
 LABEL org.opencontainers.image.description="TCGA Survival Analysis Pipeline — R Bioconductor + Snakemake"
 LABEL org.opencontainers.image.licenses="MIT"
 
-# Install system deps for R packages, Snakemake, and bc
+# Install system deps for R packages + bc
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    python3-pip \
-    python3-dev \
     bc \
     libcurl4-openssl-dev \
     libssl-dev \
@@ -22,12 +19,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjpeg-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install Snakemake
-RUN pip3 install --no-cache-dir snakemake==9.13.7
+# Install Miniforge (conda) for Snakemake (v9.x from conda-forge)
+RUN curl -fsSL https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh \
+    -o /tmp/miniforge.sh && \
+    bash /tmp/miniforge.sh -b -p /opt/conda && \
+    rm /tmp/miniforge.sh
 
-# Install R packages (BiocManager, then Bioc + CRAN packages)
+ENV PATH="/opt/conda/bin:${PATH}"
+
+# Install Snakemake via conda-forge
+RUN conda install -c conda-forge -y snakemake && \
+    conda clean -afy
+
+# Configure R to use Posit binary package manager (avoids compiling from source)
+RUN echo 'options(repos = c(CRAN = "https://packagemanager.posit.co/cran/__linux__/jammy/latest"))' \
+    >> /usr/local/lib/R/etc/Rprofile.site
+
+# Install R packages (binary from Posit PPM + BiocManager for Bioc packages)
 RUN Rscript -e 'install.packages("BiocManager", repos="https://cloud.r-project.org")'
-RUN Rscript -e 'BiocManager::install(c( \
+RUN Rscript -e 'Sys.setenv(BIOCONDUCTOR_USE_CONTAINER_REPOSITORY="TRUE"); \
+    BiocManager::install(c( \
     "TCGAbiolinks", \
     "DESeq2", \
     "GSVA", \
