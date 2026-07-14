@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM rocker/bio:4.4
+FROM bioconductor/bioconductor_docker:RELEASE_3_20
 
 LABEL org.opencontainers.image.source="https://github.com/dgruano/snakemake_tcga_survival"
 LABEL org.opencontainers.image.description="TCGA Survival Analysis Pipeline — R Bioconductor + Snakemake"
@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && pip3 install --no-cache-dir snakemake==9.13.7 \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install additional R packages not in the base rocker/bio image
+# Install additional R packages not in the base image
 RUN Rscript -e ' \
     BiocManager::install(c( \
         "TCGAbiolinks", \
